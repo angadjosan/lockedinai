@@ -52,22 +52,8 @@ function getApiKey() {
 // ---------------------------------------------------------------------------
 
 function createTrayIcon() {
-  const size = 16;
-  const buf = Buffer.alloc(size * size * 4, 0);
-  const cx = 8, cy = 8, r = 6;
-  for (let y = 0; y < size; y++) {
-    for (let x = 0; x < size; x++) {
-      const dx = x - cx, dy = y - cy;
-      if (dx * dx + dy * dy <= r * r) {
-        const idx = (y * size + x) * 4;
-        buf[idx] = 255;
-        buf[idx + 1] = 255;
-        buf[idx + 2] = 255;
-        buf[idx + 3] = 255;
-      }
-    }
-  }
-  const img = nativeImage.createFromBuffer(buf, { width: size, height: size });
+  const iconPath = path.join(__dirname, '..', '..', 'assets', 'tray-icon.png');
+  const img = nativeImage.createFromPath(iconPath);
   img.setTemplateImage(true);
   return img;
 }
@@ -481,25 +467,32 @@ app.on('second-instance', () => {
 });
 
 app.whenReady().then(() => {
-  if (app.dock) app.dock.hide();
+  try {
+    if (app.dock) app.dock.hide();
 
-  // Initialize database
-  const dbPath = path.join(app.getPath('userData'), 'lockedinai.db');
-  db = createDatabase(dbPath);
-  loadPreferences();
+    // Initialize database
+    const dbPath = path.join(app.getPath('userData'), 'lockedinai.db');
+    console.log('[LockedInAI] DB path:', dbPath);
+    db = createDatabase(dbPath);
+    loadPreferences();
 
-  const savedCamera = db.getSetting('cameraEnabled');
-  if (savedCamera !== null) cameraEnabled = savedCamera === '1';
+    const savedCamera = db.getSetting('cameraEnabled');
+    if (savedCamera !== null) cameraEnabled = savedCamera === '1';
 
-  // Initialize camera and audio services
-  cameraService = createCameraService();
-  audioService = createAudioService();
+    // Initialize camera and audio services
+    cameraService = createCameraService();
+    audioService = createAudioService();
 
-  registerIpc();
+    registerIpc();
 
-  tray = new Tray(createTrayIcon());
-  tray.setToolTip('Locked In AI');
-  tray.setContextMenu(buildContextMenu());
+    tray = new Tray(createTrayIcon());
+    tray.setToolTip('Locked In AI');
+    tray.setContextMenu(buildContextMenu());
+
+    console.log('[LockedInAI] App ready. Look for the icon in your menu bar.');
+  } catch (err) {
+    console.error('[LockedInAI] Startup failed:', err);
+  }
 });
 
 app.on('window-all-closed', (e) => {
