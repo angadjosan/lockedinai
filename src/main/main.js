@@ -483,6 +483,16 @@ app.whenReady().then(() => {
     cameraService = createCameraService();
     audioService = createAudioService();
 
+    // Request camera permission upfront
+    if (cameraEnabled) {
+      cameraService.requestPermission().then((granted) => {
+        if (!granted) {
+          console.warn('[LockedInAI] Camera permission not granted — camera monitoring disabled');
+          showNotification('Locked In AI', 'Camera access denied. Enable in System Settings → Privacy & Security → Camera.');
+        }
+      });
+    }
+
     registerIpc();
 
     tray = new Tray(createTrayIcon());
