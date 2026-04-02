@@ -1,0 +1,21 @@
+{
+  "name": "lockedinai",
+  "version": "1.0.0",
+  "main": "src/main/main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "NODE_ENV=development electron ."
+  },
+  "keywords": ["productivity", "ai", "electron"],
+  "author": "Locked In AI",
+  "license": "MIT",
+  "description": "AI-powered productivity monitor that roasts you when you're slacking off",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.39.0",
+    "better-sqlite3": "^11.7.0",
+    "screenshot-desktop": "^1.15.0"
+  },
+  "devDependencies": {
+    "electron": "^33.0.0"
+  }
+}

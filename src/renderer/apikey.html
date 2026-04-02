@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lock In - API Key</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #1a1a2e;
+      color: #eee;
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      -webkit-app-region: drag;
+      user-select: none;
+    }
+
+    .container {
+      -webkit-app-region: no-drag;
+      width: 100%;
+      max-width: 360px;
+      padding: 24px;
+      text-align: center;
+    }
+
+    h1 {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 4px;
+      color: #e94560;
+    }
+
+    .subtitle {
+      font-size: 12px;
+      color: #666;
+      margin-bottom: 20px;
+    }
+
+    .input-wrapper {
+      position: relative;
+      width: 100%;
+    }
+
+    input[type="password"],
+    input[type="text"] {
+      width: 100%;
+      padding: 12px 42px 12px 16px;
+      border: 2px solid #2a2a4a;
+      border-radius: 10px;
+      background: #16213e;
+      color: #eee;
+      font-size: 14px;
+      font-family: monospace;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    input::placeholder {
+      color: #555;
+      font-family: system-ui, -apple-system, sans-serif;
+    }
+
+    input:focus {
+      border-color: #e94560;
+    }
+
+    .toggle-vis {
+      position: absolute;
+      right: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      color: #666;
+      cursor: pointer;
+      font-size: 16px;
+      padding: 4px;
+      line-height: 1;
+    }
+
+    .toggle-vis:hover {
+      color: #999;
+    }
+
+    button.save-btn {
+      margin-top: 16px;
+      width: 100%;
+      padding: 12px;
+      border: none;
+      border-radius: 10px;
+      background: #e94560;
+      color: #fff;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+      box-shadow: 0 4px 14px rgba(233, 69, 96, 0.35);
+    }
+
+    button.save-btn:hover {
+      background: #d63b56;
+    }
+
+    button.save-btn:active {
+      transform: scale(0.97);
+    }
+
+    .status {
+      margin-top: 12px;
+      font-size: 12px;
+      color: #888;
+      min-height: 18px;
+      transition: color 0.3s;
+    }
+
+    .status.saved {
+      color: #4ecca3;
+    }
+
+    .status.error {
+      color: #e94560;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Claude API Key</h1>
+    <p class="subtitle">Required to power the roasts. Stored locally.</p>
+    <div class="input-wrapper">
+      <input type="password" id="apiKeyInput" placeholder="sk-ant-..." autocomplete="off" spellcheck="false">
+      <button class="toggle-vis" id="toggleVis" title="Show/hide key">&#128065;</button>
+    </div>
+    <button class="save-btn" id="saveBtn">Save</button>
+    <p class="status" id="status"></p>
+  </div>
+
+  <script>
+    const apiKeyInput = document.getElementById('apiKeyInput');
+    const saveBtn = document.getElementById('saveBtn');
+    const status = document.getElementById('status');
+    const toggleVis = document.getElementById('toggleVis');
+
+    toggleVis.addEventListener('click', () => {
+      const isPassword = apiKeyInput.type === 'password';
+      apiKeyInput.type = isPassword ? 'text' : 'password';
+    });
+
+    async function loadKey() {
+      try {
+        const key = await window.electronAPI.getApiKey();
+        if (key) {
+          apiKeyInput.value = key;
+          status.textContent = 'Key loaded.';
+          status.className = 'status saved';
+          setTimeout(() => {
+            status.textContent = '';
+            status.className = 'status';
+          }, 2000);
+        }
+      } catch (err) {
+        console.error('Failed to load API key:', err);
+      }
+    }
+
+    async function saveKey() {
+      const key = apiKeyInput.value.trim();
+      if (!key) {
+        status.textContent = 'Enter an API key first.';
+        status.className = 'status error';
+        return;
+      }
+      try {
+        await window.electronAPI.setApiKey(key);
+        status.textContent = 'Saved. Let the roasting begin.';
+        status.className = 'status saved';
+        setTimeout(() => {
+          status.textContent = '';
+          status.className = 'status';
+        }, 2500);
+      } catch (err) {
+        status.textContent = 'Failed to save key.';
+        status.className = 'status error';
+      }
+    }
+
+    saveBtn.addEventListener('click', saveKey);
+
+    apiKeyInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') saveKey();
+    });
+
+    loadKey();
+  </script>
+</body>
+</html>

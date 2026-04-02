@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lock In - Set Your Task</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #1a1a2e;
+      color: #eee;
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      -webkit-app-region: drag;
+      user-select: none;
+    }
+
+    .container {
+      -webkit-app-region: no-drag;
+      width: 100%;
+      max-width: 360px;
+      padding: 24px;
+      text-align: center;
+    }
+
+    h1 {
+      font-size: 20px;
+      font-weight: 700;
+      margin-bottom: 6px;
+      color: #e94560;
+    }
+
+    .subtitle {
+      font-size: 13px;
+      color: #888;
+      margin-bottom: 20px;
+    }
+
+    input[type="text"] {
+      width: 100%;
+      padding: 12px 16px;
+      border: 2px solid #2a2a4a;
+      border-radius: 10px;
+      background: #16213e;
+      color: #eee;
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    input[type="text"]::placeholder {
+      color: #555;
+    }
+
+    input[type="text"]:focus {
+      border-color: #e94560;
+    }
+
+    button {
+      margin-top: 16px;
+      width: 100%;
+      padding: 12px;
+      border: none;
+      border-radius: 10px;
+      background: #e94560;
+      color: #fff;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+      box-shadow: 0 4px 14px rgba(233, 69, 96, 0.35);
+    }
+
+    button:hover {
+      background: #d63b56;
+    }
+
+    button:active {
+      transform: scale(0.97);
+    }
+
+    .status {
+      margin-top: 12px;
+      font-size: 12px;
+      color: #888;
+      min-height: 18px;
+      transition: color 0.3s;
+    }
+
+    .status.saved {
+      color: #4ecca3;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Lock In</h1>
+    <p class="subtitle">What should you be grinding on?</p>
+    <input type="text" id="taskInput" placeholder="What should you be working on?" autocomplete="off" spellcheck="false">
+    <button id="lockInBtn">Lock In</button>
+    <p class="status" id="status"></p>
+  </div>
+
+  <script>
+    const taskInput = document.getElementById('taskInput');
+    const lockInBtn = document.getElementById('lockInBtn');
+    const status = document.getElementById('status');
+
+    async function loadTask() {
+      try {
+        const task = await window.electronAPI.getTask();
+        if (task) {
+          taskInput.value = task;
+        }
+      } catch (err) {
+        console.error('Failed to load task:', err);
+      }
+    }
+
+    async function saveTask() {
+      const task = taskInput.value.trim();
+      if (!task) {
+        status.textContent = 'Enter a task first!';
+        status.classList.remove('saved');
+        return;
+      }
+      try {
+        await window.electronAPI.setTask(task);
+        status.textContent = 'Locked in. No excuses now.';
+        status.classList.add('saved');
+        setTimeout(() => {
+          status.textContent = '';
+          status.classList.remove('saved');
+        }, 2500);
+      } catch (err) {
+        status.textContent = 'Failed to save task.';
+        status.classList.remove('saved');
+      }
+    }
+
+    lockInBtn.addEventListener('click', saveTask);
+
+    taskInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') saveTask();
+    });
+
+    loadTask();
+  </script>
+</body>
+</html>
