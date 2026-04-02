@@ -6,7 +6,11 @@
     "start": "electron .",
     "dev": "NODE_ENV=development electron ."
   },
-  "keywords": ["productivity", "ai", "electron"],
+  "keywords": [
+    "productivity",
+    "ai",
+    "electron"
+  ],
   "author": "Locked In AI",
   "license": "MIT",
   "description": "AI-powered productivity monitor that roasts you when you're slacking off",
@@ -16,6 +20,7 @@
     "screenshot-desktop": "^1.15.0"
   },
   "devDependencies": {
-    "electron": "^33.0.0"
+    "electron": "^33.0.0",
+    "electron-rebuild": "^3.2.9"
   }
 }

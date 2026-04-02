@@ -19,8 +19,16 @@ const ROAST_PERSONAS = {
     "they can't even be mad.",
 };
 
-function buildPrompt(taskContext, roastLevel) {
+function buildPrompt(taskContext, roastLevel, hasCamera) {
   const persona = ROAST_PERSONAS[roastLevel] || ROAST_PERSONAS.medium;
+
+  const cameraInstructions = hasCamera
+    ? `\n\nIMPORTANT: You also have a webcam image of the user. Look for:\n` +
+      `- Are they looking at their PHONE instead of their screen? This is an instant fail.\n` +
+      `- Are they even at their desk? If the chair is empty, roast them for disappearing.\n` +
+      `- Are they looking distracted, sleepy, or zoned out?\n` +
+      `If they're on their phone, make the roast specifically about phone addiction.`
+    : '';
 
   return (
     `You are the AI brain of "Locked In AI", a productivity monitor app. ` +
@@ -29,10 +37,12 @@ function buildPrompt(taskContext, roastLevel) {
     `Analyze the screenshot of their screen. Determine:\n` +
     `1. What they are ACTUALLY doing (be specific — name the app, website, content)\n` +
     `2. Whether this is productive relative to their stated task\n` +
-    `3. Craft a roast or encouragement based on what you see\n\n` +
+    `3. Craft a roast or encouragement based on what you see\n` +
+    cameraInstructions + `\n\n` +
     `Rules for your message:\n` +
     `- Reference SPECIFIC things visible on screen (tab titles, app names, content)\n` +
     `- If they're on Reddit, mention the subreddit. If YouTube, mention the video topic.\n` +
+    `- If they're on their phone (visible in webcam), call them OUT hard.\n` +
     `- If they're actually working, acknowledge it — but keep your persona's tone.\n` +
     `- One to two sentences max. Punchy. No filler.\n` +
     `- Do NOT be generic. "You're not working" is boring. "You have 3 Stack Overflow ` +
@@ -45,28 +55,43 @@ function buildPrompt(taskContext, roastLevel) {
 function createAIService(apiKey) {
   const client = new Anthropic({ apiKey });
 
-  async function analyzeScreenshot(screenshotBase64, taskContext, roastLevel) {
+  async function analyzeScreenshot(screenshotBase64, taskContext, roastLevel, cameraBase64) {
     try {
+      const contentBlocks = [
+        {
+          type: "image",
+          source: {
+            type: "base64",
+            media_type: "image/png",
+            data: screenshotBase64,
+          },
+        },
+      ];
+
+      // Add webcam frame if available
+      if (cameraBase64) {
+        contentBlocks.push({
+          type: "image",
+          source: {
+            type: "base64",
+            media_type: "image/png",
+            data: cameraBase64,
+          },
+        });
+      }
+
+      contentBlocks.push({
+        type: "text",
+        text: buildPrompt(taskContext, roastLevel, !!cameraBase64),
+      });
+
       const response = await client.messages.create({
         model: "claude-sonnet-4-6",
         max_tokens: 300,
         messages: [
           {
             role: "user",
-            content: [
-              {
-                type: "image",
-                source: {
-                  type: "base64",
-                  media_type: "image/png",
-                  data: screenshotBase64,
-                },
-              },
-              {
-                type: "text",
-                text: buildPrompt(taskContext, roastLevel),
-              },
-            ],
+            content: contentBlocks,
           },
         ],
       });

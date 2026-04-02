@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Audio Player</title>
+</head>
+<body>
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const soundPath = decodeURIComponent(params.get('sound') || '');
+
+    if (soundPath) {
+      const audio = new Audio('file://' + soundPath);
+
+      audio.addEventListener('ended', () => {
+        console.log('audio-ended');
+      });
+
+      audio.addEventListener('error', () => {
+        console.log('audio-error');
+      });
+
+      audio.play().catch(() => {
+        console.log('audio-error');
+      });
+    } else {
+      console.log('audio-error');
+    }
+  </script>
+</body>
+</html>

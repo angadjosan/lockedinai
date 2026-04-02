@@ -4,6 +4,8 @@ const path = require('path');
 const { captureScreen } = require('../services/screenshot');
 const { createAIService } = require('../services/ai');
 const { createDatabase } = require('../services/database');
+const { createCameraService } = require('../services/camera');
+const { createAudioService } = require('../services/audio');
 
 // ---------------------------------------------------------------------------
 // State
@@ -17,6 +19,11 @@ let aiService = null;
 let currentTask = '';
 let intervalSeconds = 30;
 let roastLevel = 'medium';
+let cameraEnabled = true;
+
+// Services
+let cameraService = null;
+let audioService = null;
 
 // Window references
 let taskWindow = null;
@@ -113,6 +120,16 @@ function buildContextMenu() {
           rebuildMenu();
         },
       })),
+    },
+    {
+      label: 'Camera Monitoring',
+      type: 'checkbox',
+      checked: cameraEnabled,
+      click: (menuItem) => {
+        cameraEnabled = menuItem.checked;
+        db.setSetting('cameraEnabled', cameraEnabled ? '1' : '0');
+        rebuildMenu();
+      },
     },
     {
       label: 'Roast Level',
@@ -292,13 +309,23 @@ async function performCheck() {
   }
 
   try {
-    const screenshotBase64 = await captureScreen();
+    // Capture screen and camera in parallel
+    const [screenshotBase64, cameraBase64] = await Promise.all([
+      captureScreen(),
+      cameraEnabled && cameraService ? cameraService.captureFrame() : Promise.resolve(null),
+    ]);
+
     if (!screenshotBase64) {
       console.error('[LockedInAI] Screenshot failed');
       return;
     }
 
-    const result = await aiService.analyzeScreenshot(screenshotBase64, currentTask, roastLevel);
+    const result = await aiService.analyzeScreenshot(
+      screenshotBase64,
+      currentTask,
+      roastLevel,
+      cameraBase64 // Pass camera frame for phone detection
+    );
 
     db.addHistoryEntry({
       productive: result.productive,
@@ -311,8 +338,10 @@ async function performCheck() {
     // Show roast popup (for both productive and unproductive)
     showRoastPopup(result.message, result.productive);
 
-    // Also send system notification if unproductive
     if (!result.productive) {
+      // Play a taunting audio clip
+      if (audioService) audioService.playRoastSound();
+      // Also system notification
       showNotification('🚨 Locked In AI', result.message);
     }
 
@@ -459,6 +488,13 @@ app.whenReady().then(() => {
   db = createDatabase(dbPath);
   loadPreferences();
 
+  const savedCamera = db.getSetting('cameraEnabled');
+  if (savedCamera !== null) cameraEnabled = savedCamera === '1';
+
+  // Initialize camera and audio services
+  cameraService = createCameraService();
+  audioService = createAudioService();
+
   registerIpc();
 
   tray = new Tray(createTrayIcon());
@@ -472,5 +508,6 @@ app.on('window-all-closed', (e) => {
 
 app.on('before-quit', () => {
   stopMonitoring();
+  if (cameraService) cameraService.cleanup();
   if (db && db.db) db.db.close();
 });

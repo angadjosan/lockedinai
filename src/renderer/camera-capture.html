@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Camera Capture</title>
+</head>
+<body>
+  <video id="video" autoplay playsinline style="display:none;"></video>
+  <canvas id="canvas" style="display:none;"></canvas>
+  <script>
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+
+    let streamReady = false;
+    let cameraError = null;
+
+    async function initCamera() {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { width: 640, height: 480 },
+          audio: false,
+        });
+        video.srcObject = stream;
+        await video.play();
+        streamReady = true;
+      } catch (err) {
+        cameraError = err.message || 'Camera not available';
+        console.error('[LockedInAI] Camera init failed:', cameraError);
+      }
+    }
+
+    function captureFrame() {
+      if (cameraError) {
+        window.cameraAPI.sendFrame(null);
+        return;
+      }
+      if (!streamReady) {
+        window.cameraAPI.sendFrame(null);
+        return;
+      }
+
+      canvas.width = video.videoWidth || 640;
+      canvas.height = video.videoHeight || 480;
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+      const dataUrl = canvas.toDataURL('image/png');
+      // Strip the data:image/png;base64, prefix
+      const base64 = dataUrl.split(',')[1] || null;
+      window.cameraAPI.sendFrame(base64);
+    }
+
+    window.cameraAPI.onCaptureRequest(() => {
+      captureFrame();
+    });
+
+    initCamera();
+  </script>
+</body>
+</html>
