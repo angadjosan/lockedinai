@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>TTS Player</title>
+</head>
+<body>
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const text = decodeURIComponent(params.get('text') || '');
+    const voiceName = decodeURIComponent(params.get('voice') || '');
+
+    if (text && window.speechSynthesis) {
+      // Wait for voices to load
+      function speak() {
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.rate = 0.95;
+        utterance.pitch = 0.75;
+        utterance.volume = 1.0;
+
+        // Pick a deep male voice
+        const voices = speechSynthesis.getVoices();
+        if (voiceName) {
+          const match = voices.find(v => v.name === voiceName);
+          if (match) utterance.voice = match;
+        } else {
+          // Prefer deep male English voices
+          const preferred = [
+            'Aaron', 'Alex', 'Fred', 'Tom', 'Daniel',
+            'Ralph', 'Eddy', 'Reed', 'Rocko'
+          ];
+          for (const name of preferred) {
+            const match = voices.find(v => v.name === name && v.lang.startsWith('en'));
+            if (match) {
+              utterance.voice = match;
+              break;
+            }
+          }
+          // Fallback: grab any English male-sounding voice
+          if (!utterance.voice) {
+            const fallback = voices.find(v => v.lang.startsWith('en') && /male/i.test(v.name));
+            if (fallback) utterance.voice = fallback;
+          }
+        }
+
+        utterance.onend = () => {
+          console.log('tts-ended');
+        };
+
+        utterance.onerror = () => {
+          console.log('tts-error');
+        };
+
+        speechSynthesis.speak(utterance);
+      }
+
+      // Voices may load async
+      if (speechSynthesis.getVoices().length > 0) {
+        speak();
+      } else {
+        speechSynthesis.onvoiceschanged = speak;
+      }
+    } else {
+      console.log('tts-error');
+    }
+  </script>
+</body>
+</html>

@@ -70,7 +70,55 @@ function createAudioService() {
     console.log('[AudioService] Playing:', path.basename(soundPath));
   }
 
-  return { playRoastSound };
+  function speakRoast(text) {
+    if (!text) return;
+
+    const ttsPlayerPath = path.join(
+      __dirname,
+      '..',
+      'renderer',
+      'tts-player.html'
+    );
+
+    const encodedText = encodeURIComponent(text);
+    const url = `file://${ttsPlayerPath}?text=${encodedText}`;
+
+    const win = new BrowserWindow({
+      show: false,
+      width: 1,
+      height: 1,
+      webPreferences: {
+        nodeIntegration: false,
+        contextIsolation: true,
+      },
+    });
+
+    win.loadURL(url);
+
+    // TTS can take a while for longer messages — 30s safety net
+    const timeout = setTimeout(() => {
+      if (!win.isDestroyed()) {
+        win.close();
+      }
+    }, 30000);
+
+    win.webContents.on('console-message', (_event, _level, message) => {
+      if (message === 'tts-ended' || message === 'tts-error') {
+        clearTimeout(timeout);
+        if (!win.isDestroyed()) {
+          win.close();
+        }
+      }
+    });
+
+    win.on('closed', () => {
+      clearTimeout(timeout);
+    });
+
+    console.log('[AudioService] Speaking roast aloud');
+  }
+
+  return { playRoastSound, speakRoast };
 }
 
 module.exports = { createAudioService };

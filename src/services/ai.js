@@ -26,8 +26,12 @@ function buildPrompt(taskContext, roastLevel, hasCamera) {
     ? `\n\nIMPORTANT: You also have a webcam image of the user. Look for:\n` +
       `- Are they looking at their PHONE instead of their screen? This is an instant fail.\n` +
       `- Are they even at their desk? If the chair is empty, roast them for disappearing.\n` +
-      `- Are they looking distracted, sleepy, or zoned out?\n` +
-      `If they're on their phone, make the roast specifically about phone addiction.`
+      `- Are they NOT LOOKING AT THE SCREEN? If their eyes/face are turned away, looking ` +
+      `to the side, looking down at something else, or they're clearly not focused on ` +
+      `their monitor — that's a fail. Call them out for not even paying attention.\n` +
+      `- Are they looking distracted, sleepy, or zoned out? Eyes half-closed = roast.\n` +
+      `If they're on their phone, make the roast about phone addiction.\n` +
+      `If they're looking away from the screen, roast them for not even pretending to work.`
     : '';
 
   return (

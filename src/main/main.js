@@ -321,13 +321,13 @@ async function performCheck() {
       roastLevel,
     });
 
-    // Show roast popup (for both productive and unproductive)
-    showRoastPopup(result.message, result.productive);
-
     if (!result.productive) {
-      // Play a taunting audio clip
-      if (audioService) audioService.playRoastSound();
-      // Also system notification
+      showRoastPopup(result.message, result.productive);
+      // Play a taunting sound effect, then speak the roast aloud
+      if (audioService) {
+        audioService.playRoastSound();
+        setTimeout(() => audioService.speakRoast(result.message), 1500);
+      }
       showNotification('🚨 Locked In AI', result.message);
     }
 
